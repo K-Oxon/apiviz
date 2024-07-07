@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
@@ -33,6 +33,7 @@
   },
   "keywords": [],
   "author": "",
+  "homepage": "https://K-Oxon.github.io/apiviz",
   "license": "ISC",
   "dependencies": {
     "@digital-go-jp/design-tokens": "^0.1.6",
