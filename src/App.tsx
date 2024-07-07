@@ -1,9 +1,24 @@
-function App() {
+import React, { useState } from 'react';
+import ApiInput from './components/ApiInput';
+import ApiKeyInput from './components/ApiKeyInput';
+import JsonDisplay from './components/JsonDisplay';
+
+const App: React.FC = () => {
+  const [jsonData, setJsonData] = useState<any>(null);
+  const [apiHeader, setApiHeader] = useState({ name: 'X-API-KEY', value: '' });
+
+  const handleApiKeyChange = (name: string, value: string) => {
+    setApiHeader({ name, value });
+  };
+
   return (
-    <div className="App">
-      <h1 className="text-3xl font-bold underline">API Viz</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">API Viz</h1>
+      <ApiKeyInput onApiKeyChange={handleApiKeyChange} />
+      <ApiInput onDataFetched={setJsonData} apiHeader={apiHeader} />
+      {jsonData && <JsonDisplay data={jsonData} />}
     </div>
   );
-}
+};
 
 export default App;
