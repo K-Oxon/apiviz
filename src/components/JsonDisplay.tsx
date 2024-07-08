@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface JsonDisplayProps {
   data: any;
+  onFilteredData: (date: any) => void;
 }
 
-const JsonDisplay: React.FC<JsonDisplayProps> = ({ data }) => {
+const JsonDisplay: React.FC<JsonDisplayProps> = ({ data, onFilteredData }) => {
   const [filter, setFilter] = useState('');
+  const [filteredData, setFilteredData] = useState(data);
 
   const filterJson = (obj: any, query: string): any => {
     if (!query) return obj;
@@ -31,7 +33,11 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({ data }) => {
     }, obj);
   };
 
-  const filteredData = filterJson(data, filter);
+  useEffect(() => {
+    const filtered = filterJson(data, filter);
+    setFilteredData(filtered);
+    onFilteredData(filtered);
+  }, [data, filter, onFilteredData]);
 
   return (
     <div className="mb-6">
@@ -44,7 +50,7 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({ data }) => {
           type="text"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="e.g., data.items"
+          placeholder="e.g., data.items[0].name"
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
