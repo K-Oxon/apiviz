@@ -1,7 +1,7 @@
 {
   "name": "apiviz",
   "version": "1.0.0",
-  "description": "",
+  "description": "A tool for visualizing and analyzing REST API open data using DuckDB-wasm",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -31,10 +31,17 @@
       "\\.(gif|ttf|eot|svg)$": "<rootDir>/__mocks__/fileMock.js"
     }
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "duckdb",
+    "wasm",
+    "react",
+    "typescript",
+    "visualization",
+    "data-analysis"
+  ],
+  "author": "K-Oxon <ko1011qfp@gmail.com>",
   "homepage": "https://K-Oxon.github.io/apiviz",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@digital-go-jp/design-tokens": "^0.1.6",
     "@digital-go-jp/tailwind-theme-plugin": "^0.1.16",
