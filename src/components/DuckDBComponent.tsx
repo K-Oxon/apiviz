@@ -1,17 +1,13 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
-import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 interface DuckDBComponentProps {
   jsonData: any;
+  db: duckdb.AsyncDuckDB | null;
+  conn: duckdb.AsyncDuckDBConnection | null;
 }
 
-const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData }) => {
-  const [db, setDB] = useState<duckdb.AsyncDuckDB | null>(null);
-  const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection | null>(null);
+const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn }) => {
   const [queryResult, setQueryResult] = useState<any[] | null>(null);
   const [error, setError] = useState<string>('');
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
@@ -19,44 +15,6 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData }) => {
   const [loadSuccess, setLoadSuccess] = useState<boolean>(false);
   const [tableName, setTableName] = useState<string>('');
   const [tableNameError, setTableNameError] = useState<string>('');
-
-  useEffect(() => {
-    const initializeDuckDB = async () => {
-      try {
-        const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
-          mvp: {
-            mainModule: duckdb_wasm,
-            mainWorker: mvp_worker,
-          },
-          eh: {
-            mainModule: duckdb_wasm_eh,
-            mainWorker: eh_worker,
-          },
-        };
-
-        const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-        const worker = new Worker(bundle.mainWorker!);
-        const logger = new duckdb.ConsoleLogger();
-        const newDB = new duckdb.AsyncDuckDB(logger, worker);
-        await newDB.instantiate(bundle.mainModule, bundle.pthreadWorker);
-        setDB(newDB);
-
-        const newConn = await newDB.connect();
-        setConn(newConn);
-      } catch (err) {
-        setError('Error initializing DuckDB: ' + (err as Error).message);
-      }
-    };
-
-    initializeDuckDB();
-
-    return () => {
-      // Cleanup
-      if (conn) {
-        conn.close();
-      }
-    };
-  }, []);
 
   const validateTableName = (name: string): boolean => {
     const regex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
@@ -147,15 +105,12 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData }) => {
     return String(value);
   };
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        e.preventDefault();
-        executeQuery();
-      }
-    },
-    [executeQuery]
-  );
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      executeQuery();
+    }
+  };
 
   return (
     <div className="mt-6">

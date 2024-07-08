@@ -1,4 +1,10 @@
+import * as duckdb from '@duckdb/duckdb-wasm';
+import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import React, { useEffect, useState } from 'react';
+
 import ApiInput from './components/ApiInput';
 import ApiKeyInput from './components/ApiKeyInput';
 import DuckDBComponent from './components/DuckDBComponent';
@@ -10,6 +16,45 @@ const App: React.FC = () => {
   const [filteredData, setFilteredData] = useState<any>(null);
   const [apiHeader, setApiHeader] = useState({ name: 'X-API-KEY', value: '' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [db, setDB] = useState<duckdb.AsyncDuckDB | null>(null);
+  const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection | null>(null);
+
+  useEffect(() => {
+    const initializeDuckDB = async () => {
+      try {
+        const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
+          mvp: {
+            mainModule: duckdb_wasm,
+            mainWorker: mvp_worker,
+          },
+          eh: {
+            mainModule: duckdb_wasm_eh,
+            mainWorker: eh_worker,
+          },
+        };
+
+        const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+        const worker = new Worker(bundle.mainWorker!);
+        const logger = new duckdb.ConsoleLogger();
+        const newDB = new duckdb.AsyncDuckDB(logger, worker);
+        await newDB.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        setDB(newDB);
+
+        const newConn = await newDB.connect();
+        setConn(newConn);
+      } catch (err) {
+        console.error('Error initializing DuckDB:', err);
+      }
+    };
+
+    initializeDuckDB();
+
+    return () => {
+      if (conn) {
+        conn.close();
+      }
+    };
+  }, []);
 
   const handleApiKeyChange = (name: string, value: string) => {
     setApiHeader({ name, value });
@@ -46,7 +91,9 @@ const App: React.FC = () => {
           {jsonData && (
             <>
               <JsonDisplay data={jsonData} onFilteredData={handleFilteredData} />
-              {filteredData && <DuckDBComponent jsonData={filteredData} />}
+              {filteredData && db && conn && (
+                <DuckDBComponent jsonData={filteredData} db={db} conn={conn} />
+              )}
             </>
           )}
         </div>

@@ -36,6 +36,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               (Windows/Linux)を使用してクエリを実行します。
             </li>
             <li>クエリ入力の下にある表に結果を表示します。</li>
+            <li>
+              追加でテーブルを作成したい場合は、エンドポイントやJSONのクエリ指定を変更した後にテーブル名を変更して"Create
+              Table"をクリックします。(古いテーブルはリロードするまで保持されます)
+            </li>
           </ol>
           <h2 className="text-2xl font-bold mt-4 mb-4">注意点</h2>
           <p className="text-sm">
