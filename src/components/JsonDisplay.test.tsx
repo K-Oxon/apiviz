@@ -11,13 +11,19 @@ const testData = {
 };
 
 describe('JsonDisplay', () => {
+  const mockOnFilteredData = jest.fn();
+
+  beforeEach(() => {
+    mockOnFilteredData.mockClear();
+  });
+
   test('renders input field with correct label', () => {
-    render(<JsonDisplay data={testData} />);
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
     expect(screen.getByLabelText('Filter JSON')).toBeInTheDocument();
   });
 
   test('displays full JSON when no filter is applied', () => {
-    render(<JsonDisplay data={testData} />);
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
     const preElement = screen.getByText((content, element) => {
       return element?.tagName.toLowerCase() === 'pre' && JSON.parse(content) !== null;
     });
@@ -26,7 +32,7 @@ describe('JsonDisplay', () => {
   });
 
   test('filters JSON correctly with object notation', () => {
-    render(<JsonDisplay data={testData} />);
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
     const filterInput = screen.getByLabelText('Filter JSON');
     fireEvent.change(filterInput, { target: { value: 'result.data' } });
     const preElement = screen.getByText((content, element) => {
@@ -37,7 +43,7 @@ describe('JsonDisplay', () => {
   });
 
   test('filters JSON correctly with array notation', () => {
-    render(<JsonDisplay data={testData} />);
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
     const filterInput = screen.getByLabelText('Filter JSON');
     fireEvent.change(filterInput, { target: { value: 'result.data[1]' } });
     const preElement = screen.getByText((content, element) => {
@@ -48,12 +54,19 @@ describe('JsonDisplay', () => {
   });
 
   test('handles invalid filter gracefully', () => {
-    render(<JsonDisplay data={testData} />);
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
     const filterInput = screen.getByLabelText('Filter JSON');
     fireEvent.change(filterInput, { target: { value: 'invalid.path' } });
     const preElement = screen.getByText((content, element) => {
       return element?.tagName.toLowerCase() === 'pre' && content === '';
     });
     expect(preElement).toBeInTheDocument();
+  });
+
+  test('calls onFilteredData when filter changes', () => {
+    render(<JsonDisplay data={testData} onFilteredData={mockOnFilteredData} />);
+    const filterInput = screen.getByLabelText('Filter JSON');
+    fireEvent.change(filterInput, { target: { value: 'result.data' } });
+    expect(mockOnFilteredData).toHaveBeenCalledWith(testData.result.data);
   });
 });
