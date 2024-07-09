@@ -15,6 +15,8 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn })
   const [loadSuccess, setLoadSuccess] = useState<boolean>(false);
   const [tableName, setTableName] = useState<string>('');
   const [tableNameError, setTableNameError] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
   const validateTableName = (name: string): boolean => {
     const regex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
@@ -80,18 +82,43 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn })
 
     try {
       const arrowResult = await conn.query(sqlQuery);
-      const result = arrowResult.toArray().map((row) => {
-        const jsonRow: Record<string, any> = {};
-        for (const [key, value] of Object.entries(row)) {
-          jsonRow[key] = value instanceof BigInt ? value.toString() : value;
-        }
-        return jsonRow;
-      });
-      setQueryResult(result);
+      setQueryResult(arrowResult);
       setError('');
     } catch (err) {
       setError('Error executing query: ' + (err as Error).message);
       setQueryResult(null);
+    }
+  };
+  const downloadCSV = () => {
+    if (!queryResult) return;
+
+    const csvRows = [];
+
+    // Add header row
+    csvRows.push(queryResult.schema.fields.map((field) => field.name).join(','));
+
+    // Add data rows
+    for (const row of queryResult) {
+      const values = queryResult.schema.fields.map((field) => {
+        const value = row[field.name];
+        if (typeof value === 'string') return `"${value.replace(/"/g, '""')}"`;
+        if (value instanceof Date) return value.toISOString();
+        return value;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'query_result.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -111,6 +138,11 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn })
       executeQuery();
     }
   };
+  const totalPages = queryResult ? Math.ceil(queryResult.numRows / rowsPerPage) : 0;
+
+  const paginatedData = queryResult
+    ? queryResult.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage)
+    : null;
 
   return (
     <div className="mt-6">
@@ -146,7 +178,6 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn })
       {loadSuccess && (
         <p className="text-green-600 font-semibold mb-4">Data loaded successfully!</p>
       )}
-      {/* </div> */}
 
       {isDataLoaded && (
         <>
@@ -170,37 +201,64 @@ const DuckDBComponent: React.FC<DuckDBComponentProps> = ({ jsonData, db, conn })
           >
             Execute Query
           </button>
-
-          {queryResult && (
-            <div className="mt-4">
-              <h3 className="text-lg font-semibold mb-2">Query Result:</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-300">
-                  <thead>
-                    <tr>
-                      {Object.keys(queryResult[0] || {}).map((key, index) => (
-                        <th key={index} className="py-2 px-4 border-b text-left">
-                          {key}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {queryResult.map((row, rowIndex) => (
-                      <tr key={rowIndex}>
-                        {Object.values(row).map((value, cellIndex) => (
-                          <td key={cellIndex} className="py-2 px-4 border-b">
-                            {renderCellValue(value)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </>
+      )}
+
+      {paginatedData && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold mb-2">Query Result:</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border border-gray-300">
+              <thead>
+                <tr>
+                  {paginatedData.schema.fields.map((field, index) => (
+                    <th key={index} className="py-2 px-4 border-b text-left">
+                      {field.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.toArray().map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {Object.values(row).map((value: any, cellIndex: number) => (
+                      <td key={cellIndex} className="py-2 px-4 border-b">
+                        {renderCellValue(value)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 flex justify-between items-center text-sm text-gray-500">
+            <div>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="text-sm text-gray-500 mr-2 hover:text-blue-500"
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="text-sm text-gray-500 ml-2 hover:text-blue-500"
+              >
+                Next
+              </button>
+            </div>
+            <button
+              onClick={downloadCSV}
+              className="text-sm text-gray-500 ml-2 hover:text-blue-500"
+            >
+              Download
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
