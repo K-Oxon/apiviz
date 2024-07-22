@@ -4,12 +4,21 @@ import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?ur
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import React, { useEffect, useState } from 'react';
+import ReactGA from 'react-ga4';
 
 import ApiInput from './components/ApiInput';
 import ApiKeyInput from './components/ApiKeyInput';
 import DuckDBComponent from './components/DuckDBComponent';
 import JsonDisplay from './components/JsonDisplay';
 import Sidebar from './components/Sidebar';
+
+const GA4_MEASUREMENT_ID = process.env.REACT_APP_GA4_MEASUREMENT_ID;
+
+if (GA4_MEASUREMENT_ID) {
+  ReactGA.initialize(GA4_MEASUREMENT_ID);
+} else {
+  console.warn('GA4 Measurement ID not found. Analytics will not be tracked.');
+}
 
 const App: React.FC = () => {
   const [jsonData, setJsonData] = useState<any>(null);
@@ -20,6 +29,10 @@ const App: React.FC = () => {
   const [conn, setConn] = useState<duckdb.AsyncDuckDBConnection | null>(null);
 
   useEffect(() => {
+    if (GA4_MEASUREMENT_ID) {
+      ReactGA.send({ hitType: 'pageview', page: '/home' });
+    }
+
     const initializeDuckDB = async () => {
       try {
         const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
