@@ -12,8 +12,7 @@ import DuckDBComponent from './components/DuckDBComponent';
 import JsonDisplay from './components/JsonDisplay';
 import Sidebar from './components/Sidebar';
 
-const GA4_MEASUREMENT_ID = process.env.REACT_APP_GA4_MEASUREMENT_ID;
-
+const GA4_MEASUREMENT_ID = import.meta.env.VITE_REACT_APP_GA4_MEASUREMENT_ID;
 if (GA4_MEASUREMENT_ID) {
   ReactGA.initialize(GA4_MEASUREMENT_ID);
 } else {
